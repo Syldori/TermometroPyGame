@@ -1,0 +1,1 @@
+Instrucciones para crear un termómetro con pygame
