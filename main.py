@@ -11,12 +11,19 @@ Crear un termometro con pygame
     -solo acepte numeros
     >>Metodo: update(): cada vez que el ususrio teclee, va a comprobar lo que tecleemos y si es numero actualizara la pantalla
      -Gestionar las fuentes del texto >> la creamos __font   
-        
-        
+    -Una vez creado, hay que ponerlo en el refresco de imagen
+        >>el probelma es como colocarlo con todas las variables que hemos creado (y algunos propias)
+        --para solucionarlo creamos un metodo def render(self) y ponemos en el todas las varaibles con las poasiciones/tamaño
+     - textBlock >> funciona como un disfraz >> es la imagen del texto 
+
 -en mainApp metemos los tres atributos:
     -termometro
     -campo de entrada
     -selector de unidad
+    
+    >>def render():
+        asegurar que el strValue (valor de entrada) sea el adecuado y no acepte letras
+        para eso hay que inicializarlo en el init
     
     >>metodo init
         -pantalla
@@ -44,20 +51,34 @@ class Termometro():
         self.custome = pygame.image.load("termometro/termo1.png") # el disfraz
        
 class NumberInput(): #este es el cuadrado donde se pone el valor del texto numerico que pongamos
-    __valor = 0
-    __strValue = '0' # este es el atributo a renderizar
+    __valor = 0 # es el valor de cuadro en numerico, para las cuentas posteirore
+    __strValue = '0' # este es el atributo a renderizar, porque phyton pinta cadenas
     __position = [0,0] #un array con la posicion del cuadrado, con x e y
     __size = [0,0] #esto es para el tamaño del cuadrado, con ancho por alto
     
     def __init__(self, value = 0): #con valor por default 0
         self.__font = pygame.font.SysFont('Arial', 24) #esta es la fuente de las letras
-        textBlock = self.__font.render(self._strValue, True, (74,74,74)) # variable que es bloque de texto renderizado, sin self porque solo es para aqui. (Se le pone la cadena a renderizar y el color)
+        self. __strValue = str(value) # va con self. porque es n objeto de o trauto prinips
+        
+    def render(self): #metodo con todo lo relacionado de renderización
+        textBlock = self.__font.render(self.__strValue, True, (74,74,74)) # variable que es bloque de texto renderizado, sin self porque solo es para aqui. (Se le pone la cadena a renderizar y el color) >> genera el recuadro con el numero
         rect = textBlock.get_rect() #esto es la forma para obtener el rectangulo
         rect.left = self.__position[0]# a este rectangulo le informamos la posicion del lado izquierdo
         rect.top = self.__position[1] #esta es la posición del alto
-        rect.size = self._size #aunque ya tenemos un recuadro con el tamaño del texto, ahora lo modificamos al que qeuramos
-   
-   #como position y size son privados de la otra clase, hay que crear setter y getters para informar aqui del tamaño del recuadro
+        rect.size = self.__size #aunque ya tenemos un recuadro con el tamaño del texto, ahora lo modificamos al que qeuramos
+        #hay que devolver lo que necesitamos para pintarlo > texto y el recuadro grande blanco >> como hay que devolver dos variables, lo hacemos con diccionario o una tupla
+            #con una tupla >> accederíamos al fondo usando [0] y al texto con [1]
+        return (rect,textBlock)
+    
+        '''
+            con dicconario
+        return {
+            'fondo': rect,
+            'texto': textBlock
+            }
+        '''        
+        
+    #como position y size son privados de la otra clase, hay que crear setter y getters para informar aqui del tamaño del recuadro
     def value(self, val =None): # este es el getter del valor
         if val == None:
             return self.__value # este es el valor numerico
@@ -69,24 +90,6 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
             except: # esto para si metemos algo que no es adecuado, va a pasar de el, no hacer nada
                 pass
             
-    def width(self, val=None): #setter del ancho del recuadro
-        if val == None:
-            return self.__size[0]
-        else:
-            try:
-                self.__size[0] = int(val)
-            except:
-                pass
-            
-    def height(self, val=None): #setter del alto del recuadro
-        if val == None:
-            return self.__size[0]
-        else:
-            try:
-                self.__size[0] = int(val)
-            except:
-                pass
-        
     def size(self, val=None): 
         if val == None:
             return self.__size
@@ -95,6 +98,34 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
                 w = int(val[0])
                 h = int(val[0])
                 self.__size = [int(val[0]),int(val[1])] # esto es para la comprobación
+            except:
+                pass
+                
+                
+    def posX(self, val=None): #setter de la position X del recuadro
+        if val == None:
+            return self.__position[0]
+        else:
+            try:
+                self.__position[0] = int(val)
+            except:
+                pass
+            
+    def posY(self, val=None): #setter del alto del recuadro
+        if val == None:
+            return self.__position[1]
+        else:
+            try:
+                self.__position[1] = int(val)
+            except:
+                pass
+        
+    def pos(self, val=None): 
+        if val == None:
+            return self.__position
+        else:
+            try:
+                self.__position = [int(val[0]),int(val[1])]
             except:
                 pass
      
@@ -110,9 +141,8 @@ class mainApp():
         
         self.termometro = Termometro() #crear una instancia de termometro dentro de esa variable
         self.entrada = NumberInput() #esto es para crear el cuadrado donde ponemos el numero
-        self.entrada.width(123)
-        
-
+        self.entrada.pos((106,58)) # esta es la posicion de nuestro recuadro de texto
+        self.entrada.size((133,28))
         
         
     def __on_close(self): #sacamos la salida a esta funcion para acostumbrarnos a dejar las funciones pequeñas
@@ -125,8 +155,15 @@ class mainApp():
             for event in pygame.event.get(): #esto es para capturar los eventos y cerrar con la X
                 if event.type == QUIT:
                     self.__on_close()
-                    
+             
+             #pintamos el termometro en su posicion
             self.__screen.blit(self.termometro.custome, (50,34)) #esto es para que pinte la imagen del termometro en esa posicion       
+           
+            #pintamos el cuadro de texto
+            text = self.entrada.render() #obtenemos rectangulo con fondo blanco y foto de texto y la asignamos a la varaible text
+            pygame.draw.rect(self.__screen, (255,255,255), text[0]) #esto es para que dibuje el recuadro con su posicion y tamaño, en la pantalla, que lo rellene de blanco y las cooredenada del fondo, (primera posicion)
+            self.__screen.blit(text[1], self.entrada.pos()) #para pintar la foto del texto >> se usa custome porque es como un disfraz >> es la imagen del texto
+            
             pygame.display.flip() #refrescar la pantalla
                     
 
