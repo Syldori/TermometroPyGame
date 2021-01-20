@@ -1,5 +1,8 @@
 '''
 Crear un termometro con pygame
+>>El termometro tiene que aceptar entradas desde teclado de la temperatura
+
+
 
 -class termómetro > la creamos por encima de mainApp porque tendremos que crear una instancia en mainApp posteriormente y asignarla a la variable termometro,
                     y python no la acepta si la creamos dentro del mainApp debajo de la variable que la llama (tiene que estar antes)
@@ -40,6 +43,8 @@ Crear un termometro con pygame
             + flip
             >pintar aqui tambien el recuadro del texto
 
+--Uno de los eventos es que podemos introducir datos directamente
+    -Esto se hace en el control de eventos >> responderá solo ante las teclas numericas
 '''
 
 
@@ -58,7 +63,23 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
     
     def __init__(self, value = 0): #con valor por default 0
         self.__font = pygame.font.SysFont('Arial', 24) #esta es la fuente de las letras
-        self. __strValue = str(value) # va con self. porque es n objeto de o trauto prinips
+        '''
+       self. __strValue = str(value) # va con self. porque es n objeto de o trauto prinips
+        try: # antes de hacer la asginación se hace un try,a dinganandolo
+            self.__strValue = int(valor)
+            self.__strValue = str(valor)
+        except:
+            psss
+        '''
+        self.value(value) #esto es lo mismo qqeu lo antrtior, pero menos farragmode
+
+    def on_event(self, event): # esto es para que, si el unicode está en los valores puestos, l valor puesto hay que añadirlo al strValue para que lo imprima en pantalla 
+        if event.type == KEYDOWN: #comprobar la tecla que se pulsa
+            if event.unicode in '0123456789' and len(self.__strValue) < 9:  #esto es para que compruebe si lo que pulsamos está dentro de ese conjunto de numeros y que se limite a un total de nueve digitos
+       # if event.isdigit() >> otra forma de hacer lo anterior
+                self.__strValue += event.unicode #así aparece el numero pulsado (solo el numero)                               
+            elif event.key == K_BACKSPACE: #comprbar si la tecla sea una determinada, en este caso la de borrar
+                self.__strValue = self.__strValue[:-1] # esto es para que si pulsemos retroceso, solo vaya elimnando el ultimo digito -ya que coje desde el principio hasta el penultimo-
         
     def render(self): #metodo con todo lo relacionado de renderización
         textBlock = self.__font.render(self.__strValue, True, (74,74,74)) # variable que es bloque de texto renderizado, sin self porque solo es para aqui. (Se le pone la cadena a renderizar y el color) >> genera el recuadro con el numero
@@ -151,10 +172,13 @@ class mainApp():
 
 
     def start(self):
+        #control de eventos
         while True:
             for event in pygame.event.get(): #esto es para capturar los eventos y cerrar con la X
                 if event.type == QUIT:
                     self.__on_close()
+                    
+                self.entrada.on_event(event) # el va a comprobar si se han pulsado las teclas adecuadas y modificar su value
              
              #pintamos el termometro en su posicion
             self.__screen.blit(self.termometro.custome, (50,34)) #esto es para que pinte la imagen del termometro en esa posicion       
