@@ -45,6 +45,9 @@ Crear un termometro con pygame
 
 --Uno de los eventos es que podemos introducir datos directamente
     -Esto se hace en el control de eventos >> responderá solo ante las teclas numericas
+--Control del selector para que cambie de F a C con hacer un solo click en cualquier lado de la pantalla y que tranforme el valor a F o a C respectivamente
+    -un atributo: si va a estar en F o en C
+    -un metodo: el cambio con el click (cambiando el disfraz)
 '''
 
 
@@ -54,10 +57,33 @@ from pygame.locals import *
 class Termometro():
     def __init__(self):
         self.custome = pygame.image.load("termometro/termo1.png") # el disfraz
-       
+
+class Selector(): #este es el selector de Fº - Cº
+    __tipoUnidad = None #esto es si es F o C
+    
+    def __init__(self, unidad='C'): #aqui estan los disfraces 
+        self.__costumes1 = pygame.image.load('termometro/posiF.png') 
+        self.__costumes2 = pygame.image.load('termometro/posiC.png')
+        
+        self.__tipoUnidad = unidad
+        
+    def custome(self): #es un getter, para que nos devuelva que disfraz a mostrar
+        if self.__tipoUnidad == 'F':
+            return self.__costumes1 #esta es la posición del disfraz para F
+        else:
+            return self.__costumes2
+    
+    def on_event(self, event): #esto es para que el selector se mueva cuando hagamos click
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.__tipoUnidad == 'F':
+                self.__tipoUnidad = 'C'
+            else:
+                self.__tipoUnidad = 'F'
+            
+
 class NumberInput(): #este es el cuadrado donde se pone el valor del texto numerico que pongamos
     __valor = 0 # es el valor de cuadro en numerico, para las cuentas posteirore
-    __strValue = '0' # este es el atributo a renderizar, porque phyton pinta cadenas
+    __strValue = "" # este es el atributo a renderizar, porque phyton pinta cadenas
     __position = [0,0] #un array con la posicion del cuadrado, con x e y
     __size = [0,0] #esto es para el tamaño del cuadrado, con ancho por alto
     
@@ -78,8 +104,12 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
             if event.unicode in '0123456789' and len(self.__strValue) < 9:  #esto es para que compruebe si lo que pulsamos está dentro de ese conjunto de numeros y que se limite a un total de nueve digitos
        # if event.isdigit() >> otra forma de hacer lo anterior
                 self.__strValue += event.unicode #así aparece el numero pulsado (solo el numero)                               
+                self.value((self.__strValue)) # actualizar el value, para que quede el valor de lo que insertamos
             elif event.key == K_BACKSPACE: #comprbar si la tecla sea una determinada, en este caso la de borrar
                 self.__strValue = self.__strValue[:-1] # esto es para que si pulsemos retroceso, solo vaya elimnando el ultimo digito -ya que coje desde el principio hasta el penultimo-
+                self.value((self.__strValue))
+         
+        
         
     def render(self): #metodo con todo lo relacionado de renderización
         textBlock = self.__font.render(self.__strValue, True, (74,74,74)) # variable que es bloque de texto renderizado, sin self porque solo es para aqui. (Se le pone la cadena a renderizar y el color) >> genera el recuadro con el numero
@@ -165,6 +195,8 @@ class mainApp():
         self.entrada.pos((106,58)) # esta es la posicion de nuestro recuadro de texto
         self.entrada.size((133,28))
         
+        self.selector = Selector() #esto sería para crear e iniciar el selector en main
+        
         
     def __on_close(self): #sacamos la salida a esta funcion para acostumbrarnos a dejar las funciones pequeñas
         pygame.quit()
@@ -179,7 +211,12 @@ class mainApp():
                     self.__on_close()
                     
                 self.entrada.on_event(event) # el va a comprobar si se han pulsado las teclas adecuadas y modificar su value
-             
+                 
+                self.selector.on_event(event) #este es para el selector, para que cambie cuando haga click
+            
+            # Pintamos el fondo de pantalla
+            self.__screen.fill((244,236,203)) #esto es repitar el fondo, para evitar que queden rastros de otros objetos
+            
              #pintamos el termometro en su posicion
             self.__screen.blit(self.termometro.custome, (50,34)) #esto es para que pinte la imagen del termometro en esa posicion       
            
@@ -188,6 +225,10 @@ class mainApp():
             pygame.draw.rect(self.__screen, (255,255,255), text[0]) #esto es para que dibuje el recuadro con su posicion y tamaño, en la pantalla, que lo rellene de blanco y las cooredenada del fondo, (primera posicion)
             self.__screen.blit(text[1], self.entrada.pos()) #para pintar la foto del texto >> se usa custome porque es como un disfraz >> es la imagen del texto
             
+            #pintamos el selector
+            self.__screen.blit(self.selector.custome(), (112,153))
+                               
+                               
             pygame.display.flip() #refrescar la pantalla
                     
 
