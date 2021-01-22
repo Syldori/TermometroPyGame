@@ -45,9 +45,15 @@ Crear un termometro con pygame
 
 --Uno de los eventos es que podemos introducir datos directamente
     -Esto se hace en el control de eventos >> responderá solo ante las teclas numericas
+
 --Control del selector para que cambie de F a C con hacer un solo click en cualquier lado de la pantalla y que tranforme el valor a F o a C respectivamente
     -un atributo: si va a estar en F o en C
     -un metodo: el cambio con el click (cambiando el disfraz)
+    
+---conversión > transformar lo que introducimos cuando hacemos click en el selector:
+    -metedo convertir en Termometro()
+    -luego en el def start, donde la revisión de eventos, hay que cambiar el selector para que deje de controlar el click
+        >> porque ahora el click va a coectar tb el covnersor
 '''
 
 
@@ -57,7 +63,19 @@ from pygame.locals import *
 class Termometro():
     def __init__(self):
         self.custome = pygame.image.load("termometro/termo1.png") # el disfraz
-
+    
+    def convertir(self, grados, toUnidad): #convertir grados C a F y viceversa
+        resultado = 0 #variable donde guarda el resultado
+        if toUnidad == 'F':
+            resultado = grados * 9/5 + 32
+        elif toUnidad == 'C':
+            resultado = (grados-32)*5/9
+        else: #si no es F ni C
+            resultado = grados
+            
+        return '{:10.2f}'.format(resultado) #devuelve el resultado, de longitus 10 y con dos decimales
+        
+    
 class Selector(): #este es el selector de Fº - Cº
     __tipoUnidad = None #esto es si es F o C
     
@@ -72,13 +90,15 @@ class Selector(): #este es el selector de Fº - Cº
             return self.__costumes1 #esta es la posición del disfraz para F
         else:
             return self.__costumes2
+        
+    def unidad(self): #esto es un getter para que devuelva F o C
+        return self.__tipoUnidad
     
-    def on_event(self, event): #esto es para que el selector se mueva cuando hagamos click
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.__tipoUnidad == 'F':
-                self.__tipoUnidad = 'C'
-            else:
-                self.__tipoUnidad = 'F'
+    def change (self): #este funciona como interruptor 
+        if self.__tipoUnidad == 'F':
+            self.__tipoUnidad = 'C'
+        else:
+            self.__tipoUnidad = 'F'
             
 
 class NumberInput(): #este es el cuadrado donde se pone el valor del texto numerico que pongamos
@@ -86,6 +106,7 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
     __strValue = "" # este es el atributo a renderizar, porque phyton pinta cadenas
     __position = [0,0] #un array con la posicion del cuadrado, con x e y
     __size = [0,0] #esto es para el tamaño del cuadrado, con ancho por alto
+    __pointsCount = 0 #esto es para que cuente los puntos para los decimales
     
     def __init__(self, value = 0): #con valor por default 0
         self.__font = pygame.font.SysFont('Arial', 24) #esta es la fuente de las letras
@@ -101,11 +122,15 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
 
     def on_event(self, event): # esto es para que, si el unicode está en los valores puestos, l valor puesto hay que añadirlo al strValue para que lo imprima en pantalla 
         if event.type == KEYDOWN: #comprobar la tecla que se pulsa
-            if event.unicode in '0123456789' and len(self.__strValue) < 9:  #esto es para que compruebe si lo que pulsamos está dentro de ese conjunto de numeros y que se limite a un total de nueve digitos
+            if event.unicode in '0123456789' and len(self.__strValue) < 10 or event.unicode == '.' and self.__pointsCount == 0:  #esto es para que compruebe si lo que pulsamos está dentro de ese conjunto de numeros y que se limite a un total de nueve digitos, 
        # if event.isdigit() >> otra forma de hacer lo anterior
                 self.__strValue += event.unicode #así aparece el numero pulsado (solo el numero)                               
                 self.value((self.__strValue)) # actualizar el value, para que quede el valor de lo que insertamos
+                if event.unicode == '.':
+                    self.__pointsCount += 1 # esto es para permitir introducir decimales con punto
             elif event.key == K_BACKSPACE: #comprbar si la tecla sea una determinada, en este caso la de borrar
+                if self.__strValue[-1] == '.': #si la posicion penultima es igual a punto
+                    self.__pointsCount -= 1 #para que si borramos el punto, podamos volver a colocar uno
                 self.__strValue = self.__strValue[:-1] # esto es para que si pulsemos retroceso, solo vaya elimnando el ultimo digito -ya que coje desde el principio hasta el penultimo-
                 self.value((self.__strValue))
          
@@ -130,14 +155,18 @@ class NumberInput(): #este es el cuadrado donde se pone el valor del texto numer
         '''        
         
     #como position y size son privados de la otra clase, hay que crear setter y getters para informar aqui del tamaño del recuadro
-    def value(self, val =None): # este es el getter del valor
+    def value(self, val=None): # este es el getter del valor
         if val == None:
             return self.__value # este es el valor numerico
         else: #si se informa val
             val = str(val) #transformar el valor en una cadena
             try:
-                self.__value = int(val) #esto es para comprobar que lo que metemos en un numero entero
+                self.__value = float(val) #esto es para comprobar que lo que metemos en un numero entero
                 self.__strValue = val # en esta variable metemos la cadena
+                if '.' in self.__strValue: #si strValue tiene punto >> cada vez que asignamos un valor, inicliazamos pointsCount ocn el valor adecuado 
+                   self.__pointsCount = 1
+                else:
+                    self.pointsCount = 0
             except: # esto para si metemos algo que no es adecuado, va a pasar de el, no hacer nada
                 pass
             
@@ -211,8 +240,13 @@ class mainApp():
                     self.__on_close()
                     
                 self.entrada.on_event(event) # el va a comprobar si se han pulsado las teclas adecuadas y modificar su value
-                 
-                self.selector.on_event(event) #este es para el selector, para que cambie cuando haga click
+                
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    self.selector.change() #esto es el interruptor para que cambien el selector de tipo de unidad
+                    grados = self.entrada.value() # este es para los grados que hemos introducido
+                    nuevaUnidad = self.selector.unidad() #getter del tipo de unidad
+                    temperatura = self.termometro.convertir(grados, nuevaUnidad) # esto llama al conersor
+                    self.entrada.value(temperatura) #asignar el nuevo valor de la temperatura ya transformada al campo de entrada
             
             # Pintamos el fondo de pantalla
             self.__screen.fill((244,236,203)) #esto es repitar el fondo, para evitar que queden rastros de otros objetos
